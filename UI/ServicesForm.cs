@@ -1,3 +1,4 @@
+using System.ServiceProcess;
 using WinRamOptimizer.Core;
 using WinRamOptimizer.Models;
 using WinRamOptimizer.Services;
@@ -7,7 +8,6 @@ namespace WinRamOptimizer.UI;
 public class ServicesForm : Form
 {
     private static readonly Color BgDark = Color.FromArgb(18, 18, 18);
-    private static readonly Color BgCard = Color.FromArgb(30, 30, 30);
     private static readonly Color AccentBlue = Color.FromArgb(0, 120, 212);
     private static readonly Color AccentGreen = Color.FromArgb(16, 185, 129);
     private static readonly Color AccentOrange = Color.FromArgb(245, 158, 11);
@@ -41,8 +41,8 @@ public class ServicesForm : Form
     private void InitializeUI()
     {
         Text = "⚙️ Servis Yöneticisi";
-        Size = new Size(1120, 680);
-        MinimumSize = new Size(900, 500);
+        Size = new Size(1220, 680);
+        MinimumSize = new Size(950, 500);
         BackColor = BgDark;
         ForeColor = TextPrimary;
         Font = new Font("Segoe UI", 9f);
@@ -51,48 +51,73 @@ public class ServicesForm : Form
         // Toolbar
         var pnlToolbar = new Panel
         {
-            Location = new Point(0, 0), Size = new Size(1120, 44),
+            Location = new Point(0, 0),
+            Size = new Size(1220, 44),
             BackColor = Color.FromArgb(22, 22, 22),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
 
         _txtSearch = new TextBox
         {
-            Location = new Point(12, 9), Size = new Size(250, 26),
-            BackColor = Color.FromArgb(42, 42, 42), ForeColor = TextPrimary,
-            BorderStyle = BorderStyle.FixedSingle, PlaceholderText = "🔍 Servis ara..."
+            Location = new Point(12, 9),
+            Size = new Size(200, 26),
+            BackColor = Color.FromArgb(42, 42, 42),
+            ForeColor = TextPrimary,
+            BorderStyle = BorderStyle.FixedSingle,
+            PlaceholderText = "🔍 Servis ara..."
         };
         _txtSearch.TextChanged += (_, _) => FilterGrid(_txtSearch.Text);
 
-        var btnRefresh = MiniButton("🔄 Yenile", AccentBlue, 276);
+        var btnSafe = MiniBtn("☑ Güvenlileri Seç", Color.FromArgb(40, 40, 40), 220, 115);
+        btnSafe.Click += (_, _) => SetCheckPredicate(s => s.Category == ServiceCategory.Safe);
+
+        var btnOptional = MiniBtn("☑ Opsiyonelleri Seç", Color.FromArgb(40, 40, 40), 340, 125);
+        btnOptional.Click += (_, _) => SetCheckPredicate(s => s.Category == ServiceCategory.Optional);
+
+        var btnAllEligible = MiniBtn("☑ Tüm Uygunları Seç", Color.FromArgb(40, 40, 40), 470, 125);
+        btnAllEligible.Click += (_, _) => SetCheckPredicate(s => s.CanDisable && !s.IsProtected && !s.IsHardwareService);
+
+        var btnNone = MiniBtn("☐ Seçimi Kaldır", Color.FromArgb(40, 40, 40), 600, 105);
+        btnNone.Click += (_, _) => SetCheckPredicate(s => false);
+
+        var btnStopSelected = MiniBtn("⏹ SEÇİLENLERİ DURDUR", Color.FromArgb(120, 40, 40), 710, 160);
+        btnStopSelected.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+        btnStopSelected.Click += BtnStopSelected_Click;
+
+        var btnManualSelected = MiniBtn("⚙️ MANUEL YAP", Color.FromArgb(30, 80, 120), 875, 130);
+        btnManualSelected.Click += BtnManualSelected_Click;
+
+        var btnRefresh = MiniBtn("🔄", AccentBlue, 1010, 40);
         btnRefresh.Click += async (_, _) => await LoadServicesAsync();
 
-        var btnStop = MiniButton("⏹ Durdur", Color.FromArgb(100, 40, 40), 378);
-        btnStop.Click += BtnStop_Click;
+        _lblCount = new Label { Text = "–", AutoSize = true, Location = new Point(1060, 14), ForeColor = TextSecondary };
 
-        var btnStart = MiniButton("▶ Başlat", Color.FromArgb(30, 80, 30), 488);
-        btnStart.Click += BtnStart_Click;
-
-        _lblCount = new Label { Text = "–", AutoSize = true, Location = new Point(600, 14), ForeColor = TextSecondary };
-
-        pnlToolbar.Controls.AddRange(new Control[] { _txtSearch, btnRefresh, btnStop, btnStart, _lblCount });
+        pnlToolbar.Controls.AddRange(new Control[] { _txtSearch, btnSafe, btnOptional, btnAllEligible, btnNone, btnStopSelected, btnManualSelected, btnRefresh, _lblCount });
         Controls.Add(pnlToolbar);
 
         // DGV
         _dgv = new DataGridView
         {
-            Location = new Point(0, 46), Size = new Size(1120, 634),
-            Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right, BackgroundColor = BgDark,
-            GridColor = Color.FromArgb(40, 40, 40), BorderStyle = BorderStyle.None,
-            RowHeadersVisible = false, AllowUserToAddRows = false,
-            AllowUserToDeleteRows = false, ReadOnly = true,
+            Location = new Point(0, 46),
+            Size = new Size(1220, 634),
+            Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
+            BackgroundColor = BgDark,
+            GridColor = Color.FromArgb(40, 40, 40),
+            BorderStyle = BorderStyle.None,
+            RowHeadersVisible = false,
+            AllowUserToAddRows = false,
+            AllowUserToDeleteRows = false,
+            ReadOnly = false,
             SelectionMode = DataGridViewSelectionMode.FullRowSelect,
             AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
             ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-            ColumnHeadersHeight = 32, RowTemplate = { Height = 28 }
+            ColumnHeadersHeight = 32,
+            RowTemplate = { Height = 28 }
         };
 
         StyleDgv(_dgv);
+
+        _dgv.Columns.Add(new DataGridViewCheckBoxColumn { Name = "Select", HeaderText = "Seç", FillWeight = 35, ReadOnly = false });
 
         var cols = new (string Name, string Header, int Width)[]
         {
@@ -102,23 +127,18 @@ public class ServicesForm : Form
             ("StartType",     "Başlangıç",        100),
             ("Category",      "Kategori",          90),
             ("RAM",           "RAM Tahmini",       90),
-            ("Dependents",    "Bağımlılar",        80),
             ("Recommendation","Öneri",            260),
         };
 
         foreach (var (name, header, width) in cols)
-            _dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = name, HeaderText = header, FillWeight = width });
+            _dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = name, HeaderText = header, FillWeight = width, ReadOnly = true });
 
         Controls.Add(_dgv);
     }
 
-    private static Button MiniButton(string text, Color back, int x)
+    private static Button MiniBtn(string text, Color back, int x, int w)
     {
-        var b = new Button
-        {
-            Text = text, Location = new Point(x, 8), Size = new Size(96, 28),
-            BackColor = back, ForeColor = Color.White, FlatStyle = FlatStyle.Flat
-        };
+        var b = new Button { Text = text, Location = new Point(x, 8), Size = new Size(w, 28), BackColor = back, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8f) };
         b.FlatAppearance.BorderSize = 0;
         return b;
     }
@@ -145,20 +165,26 @@ public class ServicesForm : Form
         foreach (var svc in services)
         {
             int idx = _dgv.Rows.Add(
+                false,
                 svc.ServiceName,
                 svc.DisplayName,
                 svc.Status,
                 svc.StartType,
                 svc.CategoryDisplay,
                 svc.EstimatedRamDisplay,
-                svc.DependentServices.Count > 0 ? svc.DependentServices.Count.ToString() : "–",
                 svc.Recommendation
             );
 
             var row = _dgv.Rows[idx];
             row.Tag = svc;
 
-            // Row color by category
+            // Requirement 6: Critical or Protected service checkboxes are disabled
+            if (!svc.CanDisable || svc.IsProtected || svc.IsHardwareService || svc.Category == ServiceCategory.Critical)
+            {
+                row.Cells["Select"].ReadOnly = true;
+                row.Cells["Select"].Value = false;
+            }
+
             row.DefaultCellStyle.BackColor = svc.Category switch
             {
                 ServiceCategory.Critical => Color.FromArgb(28, 20, 20),
@@ -168,12 +194,22 @@ public class ServicesForm : Form
                 _ => BgDark
             };
 
-            // Status color
             var statusCell = row.Cells["Status"];
             statusCell.Style.ForeColor = svc.Status == "Running" ? AccentGreen : TextSecondary;
         }
 
         _lblCount.Text = $"{services.Count} servis";
+    }
+
+    private void SetCheckPredicate(Func<ServiceInfoModel, bool> predicate)
+    {
+        foreach (DataGridViewRow row in _dgv.Rows)
+        {
+            if (row.Tag is ServiceInfoModel s && s.CanDisable && !s.IsProtected && !s.IsHardwareService)
+            {
+                row.Cells["Select"].Value = predicate(s);
+            }
+        }
     }
 
     private void FilterGrid(string filter)
@@ -186,53 +222,88 @@ public class ServicesForm : Form
         PopulateGrid(filtered);
     }
 
-    private void BtnStop_Click(object? sender, EventArgs e)
+    private void BtnStopSelected_Click(object? sender, EventArgs e)
     {
-        if (_dgv.SelectedRows.Count == 0) return;
-        if (_dgv.SelectedRows[0].Tag is not ServiceInfoModel svc) return;
-
-        if (!svc.CanDisable)
+        var selected = GetSelectedServices();
+        if (!selected.Any())
         {
-            MessageBox.Show($"'{svc.DisplayName}' korumalıdır ve durdurulamaz.", "Korumalı Servis",
-                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show("Durdurulacak servis seçilmedi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
 
-        if (svc.DependentServices.Count > 0)
-        {
-            var deps = string.Join(", ", svc.DependentServices.Take(5));
-            var cont = MessageBox.Show(
-                $"Bu servise şu servisler bağımlıdır:\n{deps}\n\nYine de durdurmak istiyor musunuz?",
-                "Bağımlılık Uyarısı", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-            if (cont != DialogResult.Yes) return;
-        }
-
-        var confirm = MessageBox.Show(
-            $"'{svc.DisplayName}' servisi durdurulsun mu?",
-            "Servisi Durdur", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+        var confirm = MessageBox.Show($"Seçilen {selected.Count} adet servis durdurulsun mu?", "Servisleri Durdur",
+            MessageBoxButtons.YesNo, MessageBoxIcon.Question);
         if (confirm != DialogResult.Yes) return;
 
-        if (_serviceManager.StopService(svc.ServiceName, out var err))
+        int count = 0;
+        var errors = new List<string>();
+
+        foreach (var svc in selected)
         {
-            MessageBox.Show("Servis başarıyla durduruldu.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            _ = LoadServicesAsync();
+            if (_safetyManager.CanDisableService(svc.ServiceName, svc.DisplayName))
+            {
+                if (_serviceManager.StopService(svc.ServiceName, out var err))
+                {
+                    count++;
+                }
+                else if (!string.IsNullOrEmpty(err))
+                {
+                    errors.Add($"{svc.DisplayName}: {err}");
+                }
+            }
         }
-        else
-            MessageBox.Show($"Durdurma başarısız:\n{err}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+        var msg = $"{count} adet servis başarıyla durduruldu.";
+        if (errors.Any()) msg += $"\n\nHatalar:\n{string.Join("\n", errors.Take(5))}";
+
+        MessageBox.Show(msg, "İşlem Tamamlandı", MessageBoxButtons.OK, count > 0 ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+
+        _ = LoadServicesAsync();
     }
 
-    private void BtnStart_Click(object? sender, EventArgs e)
+    private void BtnManualSelected_Click(object? sender, EventArgs e)
     {
-        if (_dgv.SelectedRows.Count == 0) return;
-        if (_dgv.SelectedRows[0].Tag is not ServiceInfoModel svc) return;
-
-        if (_serviceManager.StartService(svc.ServiceName, out var err))
+        var selected = GetSelectedServices();
+        if (!selected.Any())
         {
-            MessageBox.Show("Servis başlatıldı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            _ = LoadServicesAsync();
+            MessageBox.Show("İşlem yapılacak servis seçilmedi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
         }
-        else
-            MessageBox.Show($"Başlatma başarısız:\n{err}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+        var confirm = MessageBox.Show($"Seçilen {selected.Count} adet servisin başlangıç türü 'Manuel' yapılsın mı?", "Manuel Tipe Al",
+            MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+        if (confirm != DialogResult.Yes) return;
+
+        int count = 0;
+
+        foreach (var svc in selected)
+        {
+            if (_safetyManager.CanDisableService(svc.ServiceName, svc.DisplayName))
+            {
+                if (_serviceManager.SetServiceStartType(svc.ServiceName, ServiceStartMode.Manual, out _))
+                {
+                    count++;
+                }
+            }
+        }
+
+        MessageBox.Show($"{count} adet servis Manuel başlangıç türüne alındı.", "İşlem Tamamlandı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+        _ = LoadServicesAsync();
+    }
+
+    private List<ServiceInfoModel> GetSelectedServices()
+    {
+        var list = new List<ServiceInfoModel>();
+        foreach (DataGridViewRow row in _dgv.Rows)
+        {
+            if (Convert.ToBoolean(row.Cells["Select"].Value) && row.Tag is ServiceInfoModel s)
+            {
+                if (_safetyManager.CanDisableService(s.ServiceName, s.DisplayName))
+                    list.Add(s);
+            }
+        }
+        return list;
     }
 
     private static void StyleDgv(DataGridView dgv)

@@ -19,7 +19,9 @@ public class ServiceInfoModel
     public ServiceCategory Category { get; set; }
     public RiskLevel Risk { get; set; }
     public bool CanDisable { get; set; }
+    public bool CanSetManual { get; set; } = true;
     public bool IsProtected { get; set; }
+    public bool IsHardwareService { get; set; }
     public List<string> DependentServices { get; set; } = new();
     public List<string> DependsOn { get; set; } = new();
     public string Recommendation { get; set; } = string.Empty;

@@ -8,31 +8,6 @@ namespace WinRamOptimizer.Core;
 public class ProcessAnalyzer
 {
     private readonly SafetyManager _safetyManager;
-    private readonly Dictionary<string, double> _cpuCache = new();
-    private readonly object _cpuLock = new();
-
-    // Hard-coded known user apps for quicker categorization
-    private static readonly HashSet<string> KnownUserApps = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "chrome", "msedge", "firefox", "opera", "brave", "iexplore",
-        "Discord", "Teams", "Slack", "zoom", "skype",
-        "Steam", "EpicGamesLauncher", "GOGGalaxy", "Battle.net",
-        "OneDrive", "Dropbox", "GoogleDriveFS", "Spotify", "iTunes",
-        "VLC", "vlc", "WINWORD", "EXCEL", "POWERPNT", "OUTLOOK",
-        "notepad", "notepad++", "7zFM", "WinRAR",
-        "AdobeUpdateService", "CreativeCloud", "photoshop",
-        "devenv", "Code", "rider64"
-    };
-
-    private static readonly HashSet<string> KnownSystemServices = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "svchost", "lsass", "csrss", "smss", "wininit", "services",
-        "system", "registry", "dwm", "winlogon", "audiodg", "fontdrvhost",
-        "Memory Compression", "Secure System", "spoolsv", "taskhostw",
-        "sihost", "ctfmon", "conhost", "RuntimeBroker", "ShellExperienceHost",
-        "StartMenuExperienceHost", "SearchHost", "SearchIndexer",
-        "WmiPrvSE", "unsecapp", "dllhost", "msdtc", "lsm"
-    };
 
     public ProcessAnalyzer(SafetyManager safetyManager)
     {
@@ -53,8 +28,9 @@ public class ProcessAnalyzer
         int total = allProcesses.Length;
         int done = 0;
 
-        // Pre-fetch CPU usage with a short delay approach using PerformanceCounter
-        // We'll use a simpler WMI approach to avoid PerformanceCounter thread issues
+        // Active foreground window PID
+        int activePid = ApplicationClassifier.GetActiveWindowProcessId();
+
         var wmiCpuData = GetWmiCpuData();
 
         foreach (var proc in allProcesses)
@@ -63,7 +39,7 @@ public class ProcessAnalyzer
 
             try
             {
-                var model = BuildProcessModel(proc, wmiCpuData);
+                var model = BuildProcessModel(proc, wmiCpuData, activePid);
                 result.Add(model);
             }
             catch { /* Skip inaccessible processes */ }
@@ -78,12 +54,13 @@ public class ProcessAnalyzer
         return result.OrderByDescending(p => p.RamUsageBytes).ToList();
     }
 
-    private ProcessInfoModel BuildProcessModel(Process proc, Dictionary<int, double> wmiCpuData)
+    private ProcessInfoModel BuildProcessModel(Process proc, Dictionary<int, double> wmiCpuData, int activePid)
     {
         var model = new ProcessInfoModel
         {
             Name = proc.ProcessName,
             Pid = proc.Id,
+            IsActiveWindow = (proc.Id == activePid && activePid > 0)
         };
 
         try { model.RamUsageBytes = proc.WorkingSet64; } catch { }
@@ -105,10 +82,18 @@ public class ProcessAnalyzer
         }
         catch { }
 
+        // Application category
+        model.AppCategory = ApplicationClassifier.Classify(proc.ProcessName, model.FilePath, model.Publisher);
+
         // Classify
         model.IsSystemProcess = IsSystemProcess(proc, model);
-        model.IsUserApplication = IsUserApp(proc.ProcessName);
-        model.CanTerminate = _safetyManager.CanTerminateProcess(proc.ProcessName);
+        model.IsUserApplication = model.AppCategory == ApplicationCategory.UserApplication ||
+                                  model.AppCategory == ApplicationCategory.Browser ||
+                                  model.AppCategory == ApplicationCategory.GameLauncher ||
+                                  model.AppCategory == ApplicationCategory.Communication ||
+                                  model.AppCategory == ApplicationCategory.CloudSync;
+
+        model.CanTerminate = _safetyManager.CanTerminateProcess(proc.ProcessName, proc.Id);
 
         ClassifyProcess(model);
         model.OptimizationScore = CalculateOptimizationScore(model);
@@ -166,24 +151,22 @@ public class ProcessAnalyzer
 
     private static bool IsSystemProcess(Process proc, ProcessInfoModel model)
     {
-        if (KnownSystemServices.Contains(proc.ProcessName)) return true;
-        if (proc.SessionId == 0) return true;
-        if (model.IsSignedByMicrosoft && KnownSystemServices.Contains(proc.ProcessName)) return true;
-        return false;
-    }
+        if (model.AppCategory == ApplicationCategory.System ||
+            model.AppCategory == ApplicationCategory.Driver ||
+            model.AppCategory == ApplicationCategory.Security)
+            return true;
 
-    private static bool IsUserApp(string processName)
-    {
-        return KnownUserApps.Contains(processName);
+        if (proc.SessionId == 0) return true;
+        return false;
     }
 
     private void ClassifyProcess(ProcessInfoModel model)
     {
-        if (model.IsSystemProcess || !model.CanTerminate)
+        if (model.IsSystemProcess || !model.CanTerminate || model.IsActiveWindow)
         {
             model.Category = ProcessCategory.Green;
             model.Risk = RiskLevel.Critical;
-            model.Recommendation = "Sistem processi – dokunmayın.";
+            model.Recommendation = model.IsActiveWindow ? "⭐️ Aktif Kullanılan Uygulama." : "Sistem processi – dokunmayın.";
             return;
         }
 
@@ -197,18 +180,26 @@ public class ProcessAnalyzer
 
         if (model.IsUserApplication)
         {
-            if (model.RamUsageMB > 300)
+            if (model.RamUsageMB > 200)
             {
-                model.Category = ProcessCategory.Yellow;
+                model.Category = ProcessCategory.Red;
                 model.Risk = RiskLevel.Low;
-                model.Recommendation = "Yüksek RAM tüketiyor. Kullanmıyorsanız kapatabilirsiniz.";
+                model.Recommendation = "Arka planda yüksek RAM tüketiyor. Kapatabilirsiniz.";
             }
             else
             {
-                model.Category = ProcessCategory.Green;
+                model.Category = ProcessCategory.Yellow;
                 model.Risk = RiskLevel.Low;
-                model.Recommendation = "Kullanıcı uygulaması – güvenli.";
+                model.Recommendation = "Arka plan uygulaması.";
             }
+            return;
+        }
+
+        if (model.AppCategory == ApplicationCategory.Updater)
+        {
+            model.Category = ProcessCategory.Red;
+            model.Risk = RiskLevel.Low;
+            model.Recommendation = "Gereksiz arka plan güncelleyicisi.";
             return;
         }
 
@@ -229,7 +220,7 @@ public class ProcessAnalyzer
 
     private static int CalculateOptimizationScore(ProcessInfoModel model)
     {
-        if (model.IsSystemProcess || !model.CanTerminate) return 0;
+        if (model.IsSystemProcess || !model.CanTerminate || model.IsActiveWindow) return 0;
         if (model.IsSignedByMicrosoft) return 5;
 
         int score = 0;
@@ -240,11 +231,11 @@ public class ProcessAnalyzer
         // CPU contribution (0-20 pts)
         score += (int)Math.Min(20, model.CpuUsagePercent * 2);
 
-        // User app penalty (if it's a user app the user might want it)
-        if (model.IsUserApplication) score -= 10;
+        // Updater boost
+        if (model.AppCategory == ApplicationCategory.Updater) score += 30;
 
-        // Boost for unknown processes
-        if (!model.IsUserApplication && !model.IsSignedByMicrosoft) score += 20;
+        // User app penalty (if user might want it)
+        if (model.IsUserApplication) score += 10;
 
         return Math.Max(0, Math.Min(100, score));
     }

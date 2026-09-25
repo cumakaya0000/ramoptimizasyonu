@@ -1,63 +1,53 @@
-# ⚡ WinRam Optimizer
+# ⚡ WinRam Optimizer V2 Pro
 
-**WinRam Optimizer**, Windows 10 ve Windows 11 işletim sistemleri için geliştirilmiş profesyonel, güvenli ve yüksek performanslı bir **RAM ve Arka Plan Optimizasyon Uygulaması**dır.
+**WinRam Optimizer V2**, Windows 10 ve Windows 11 işletim sistemleri için geliştirilmiş profesyonel, akıllı ve yüksek performanslı bir **Gerçek RAM ve Arka Plan Optimizasyon Uygulaması**dır.
 
-Uygulamanın temel amacı; sistem kararlılığını bozmadan, rastgele Windows servislerini kapatmadan ve işletim sistemine zarar vermeden gereksiz RAM kullanımını tespit etmek, arka planda yüksek kaynak tüketen uygulamaları raporlamak ve kullanıcıya güvenli optimizasyon imkanı sunmaktır.
+Uygulamanın temel amacı; sistem kararlılığını bozmadan, sahte "RAM cleaner" (WorkingSet trim) hileleri kullanmadan, arka planda gereksiz yere RAM tüketen kullanıcı uygulamalarını, updater servislerini, opsiyonel servisleri, otomatik başlangıç programlarını ve üçüncü taraf Görev Zamanlayıcı (Scheduled Task) öğelerini **TEK TIK** ile güvenli şekilde sonlandırmaktır.
 
 ---
 
-## 🛡️ Güvenlik ve Temel Prensipler
+## 🛡️ Güvenlik ve Donanım Koruma İlkeleri
 
-> **ÖNCE ANALİZ ➔ ÖNERİ ➔ KULLANICI ONAYI ➔ SİSTEM YEDEĞİ ➔ OPTİMİZASYON**
+> **ÖNCE ANALİZ ➔ KONTROL ➔ SİSTEM SNAPSHOT YEDEĞİ ➔ OPTİMİZASYON ➔ YENİDEN ÖLÇÜM & RESTART KONTROLÜ**
 
-WinRam Optimizer kesinlikle rastgele Windows bileşenlerini kapatmaz. Sistem kararlılığı için aşağıdaki bileşenler ve servisler **tamamen koruma altındadır**:
+WinRam Optimizer kesinlikle kritik Windows ve donanım bileşenlerini kapatmaz:
 
 - **Kritik Processler:** `System`, `Registry`, `smss.exe`, `csrss.exe`, `wininit.exe`, `services.exe`, `lsass.exe`, `svchost.exe`, `winlogon.exe`, `dwm.exe`, `explorer.exe`, `audiodg.exe`, `fontdrvhost.exe`, `Memory Compression` vb.
-- **Kritik Servisler:** Windows Audio, DHCP Client, DNS Client, Windows Defender, Windows Firewall, RPC, Plug and Play, Task Scheduler, User Profile Service, Network Location Awareness, WLAN AutoConfig, Cryptographic Services vb.
-- **Otomatik Geri Alma & Sistem Geri Yükleme:** Optimizasyon öncesinde Windows **System Restore Point** ve uygulamanın kendi **SystemSnapshot (JSON)** yedeği alınır. Yapılan tüm değişiklikler tek tıkla eski haline döndürülebilir.
+- **Aktif Uygulama Koruması (Active Window Protection):** Kullanıcının ekranda o anda aktif olarak kullandığı uygulama (`GetForegroundWindow`) tespit edilir ve Agresif modda dahi otomotik kapanmaz.
+- **Donanım & Sürücü Servis Koruması:** Wi-Fi, Ethernet, Bluetooth, Audio, GPU/Ekran Kartı, Klavye, Touchpad, USB ve donanım üreticilerine ait (`Intel`, `AMD`, `NVIDIA`, `Realtek`, `Lenovo`, `Synaptics`, `Qualcomm`, `MediaTek`) servisler koruma altındadır.
+- **Kritik Servisler:** Windows Audio, DHCP Client, DNS Client, Defender, Firewall, RPC, Plug & Play, Task Scheduler, User Profile Service vb.
 
 ---
 
-## ✨ Ana Özellikler
+## ✨ WinRam Optimizer V2 Yenilikleri
 
-1. **📊 Canlı RAM Takibi & Grafik**
-   - Ana ekranda son 60 saniyelik RAM kullanım geçmişi canlı grafik ile gösterilir.
-   - Toplam RAM, kullanılan RAM, boş RAM ve kullanım yüzdesi anlık güncellenir.
-   - UI thread kilitlenmez, kaynak tüketimi son derece düşüktür (Idle: ~50-100 MB RAM).
+1. **⚡ GERÇEK TEK TIK OPTİMİZASYON (`⚡ TEK TIK RAM TEMİZLE`)**
+   - Tek bir butona basılarak arka planda tam otomatik akış çalışır:  
+     `Analiz ➔ Güvenlik Kontrolü ➔ Mode Seçimi (Güvenli/Agresif) ➔ Snapshot Yedeği ➔ Process Kapatma ➔ Servis Temizliği ➔ Startup Temizliği ➔ Task Temizliği ➔ 3sn Bekleme & Yeniden Ölçüm ➔ Restart Kontrolü ➔ Detaylı Sonuç Raporu`
 
-2. **🔍 Kapsamlı Process Analizi**
-   - Tüm çalışan processler taranır (PID, RAM, CPU %, Yayıncı, Microsoft İmzası, Başlangıç Zamanı).
-   - Processler 3 kategoriye ayrılır: `GREEN` (Güvenli/Gerekli), `YELLOW` (Opsiyonel), `RED` (Muhtemelen Gereksiz).
-   - Optimizasyon Skoru (0-100) hesaplanarak en çok RAM tüketen gereksiz uygulamalar öne çıkarılır.
+2. **🎯 3 FARKLI OPTİMİZASYON MODU (`OptimizationMode`)**
+   - **Güvenli (Safe):** Sadece kesin olarak güvenli olduğu bilinen kullanıcı uygulamalarını, updater bileşenlerini ve düşük riskli öğeleri temizler.
+   - **Agresif (Aggressive):** LOW ve MEDIUM riskli tüm opsiyonel servisleri, arka plan uygulamalarını, Otomatik servisleri Manuel yapmayı ve Scheduled Task öğelerini temizler. HIGH/CRITICAL/UNKNOWN öğeler asla otomatik seçilmez.
+   - **Manuel (Manual):** Tüm adayları checkbox listesinde gösterir, kararı kullanıcıya bırakır.
 
-3. **⚙️ Windows Servis Analizi & Bağımlılık Kontrolü**
-   - `ServiceController` ve `WMI` kullanılarak tüm servisler taranır.
-   - Servisler kategorilere ayrılır: `CRITICAL` (Dokunulmaz), `SAFE` (Güvenli kapatılabilir), `OPTIONAL` (Kullanıma bağlı), `UNKNOWN` (Bilinmeyen).
-   - Bir servis kapatılmadan önce bağımlı servisler kontrol edilir ve kullanıcıya uyarı verilir.
+3. **📊 DETAYLI SÖNÜÇ & GERÇEK KAZANÇ RAPORU**
+   - Yapay GC işlemleri yapılmaz. Optimizasyon tamamlandıktan 3 saniye sonra sistem yeniden taranır.
+   - Önce/Sonra RAM tutarı (GB ve %), Gerçek Net Kazanım, Kapatılan Process, Durdurulan Servis, Manuel Yapılan Servis, Devre Dışı Startup, Devre Dışı Task ve Tekrar Başlayan Process sayıları gösterilir.
 
-4. **🚀 Başlangıç Program Yönetimi (Startup Manager)**
-   - `HKCU` / `HKLM` Registry Run anahtarları, WOW6432Node, Başlangıç Klasörleri ve Görev Zamanlayıcı taranır.
-   - Sistem açılışını yavaşlatan yüksek etkili uygulamalar tespit edilir ve kullanıcı onayıyla devre dışı bırakılabilir.
+4. **🔄 RESTART DETECTOR (Tekrar Başlayan Process Tespiti)**
+   - Kapatılan bir process 5 saniye içinde kendiliğinden tekrar başlarsa (örn: `AdobeUpdateService.exe`) tespit edilir ve yeniden başlama kaynağı (Servis, Startup, Task, Parent Process) raporlanır.
 
-5. **⚡ Akıllı Optimizasyon (One-Click Smart Optimization)**
-   - Tek tıkla sistem analizi yapılır, RAM tüketen uygulamalar, opsiyonel servisler ve başlangıç öğeleri listelenir.
-   - Risk seviyesi `HIGH` veya `CRITICAL` olan öğeler otomatik seçilmez, kullanıcı kontrolüne bırakılır.
+5. **📅 SCHEDULER TASK (Görev Zamanlayıcı) ANALİZİ**
+   - `Schtasks.exe` ile üçüncü taraf updater, launcher, telemetry, background update ve helper görevleri taranır ve tek tıkla pasife alınabilir. `\Microsoft\Windows\` sistem görevleri koruma altındadır.
 
-6. **↩️ Geri Al (Rollback System)**
-   - Değişiklik yapılan servislerin eski başlangıç türleri (`Automatic`, `Manual`, `Disabled`) ve kapatılan başlangıç öğeleri kaydedilir.
-   - İstenildiği an tek tıkla eski sistem durumuna dönülebilir.
+6. **🏷️ UYGULAMA SINIFLANDIRMA MOTORU (`ApplicationClassifier`)**
+   - Processler türlerine göre otomatik etiketlenir: `System`, `Driver`, `Security`, `UserApplication`, `Browser`, `GameLauncher`, `Updater`, `CloudSync`, `Communication`, `OEMUtility`, `Development`.
 
-7. **👥 Kullanım Profilleri (System Profiles)**
-   - **Gaming:** Oyun servisleri (Steam, Xbox, GPU, Ses) korunur.
-   - **Office:** Tarayıcılar ve ofis uygulamaları önceliklendirilir.
-   - **Developer:** Docker, WSL, SQL Server, Visual Studio, Node.js korunur.
-   - **Low RAM PC / Maximum Performance / Custom** seçenekleri mevcuttur.
-
-8. **📋 Loglama Sistemi**
-   - Yapılan her işlem (kapatılan process, durdurulan servis, devre dışı bırakılan başlangıç öğesi ve kazanılan RAM miktarı) `Logs/app.log` dosyasına kaydedilir.
-
-9. **🌙 Modern Windows 11 Koyu Tema (Dark Mode UI)**
-   - Sade, kart tabanlı, modern koyu gri tasarım.
+7. **☑️ GELİŞMİŞ ÇOKLU SEÇİM SİSTEMLERİ**
+   - **Process Ekranı:** Checkbox kolonlu DataGridView. "Tümünü Seç", "Güvenli Olanları Seç", "Seçilenleri Kapat".
+   - **Servis Ekranı:** Checkbox kolonlu DataGridView. Korumalı servis checkbox'ları kapalıdır. "Güvenli Servisleri Seç", "Opsiyonelleri Seç", "Seçilenleri Durdur", "Seçilenleri Manuel Yap".
+   - **Startup Ekranı:** Checkbox kolonlu DataGridView. Program uninstall edilmez, sadece otomatik açılışı kapatılır.
+   - **Diyalog Penceresi:** Dinamik "Seçili: X / Y | Tahmini Kazanım: Z GB" canlı RAM sayacı.
 
 ---
 
@@ -65,33 +55,38 @@ WinRam Optimizer kesinlikle rastgele Windows bileşenlerini kapatmaz. Sistem kar
 
 ```text
 WinRamOptimizer/
-├── WinRamOptimizer.csproj         # .NET 8 WinForms proje dosyası ve NuGet bağımlılıkları
-├── Program.cs                      # Uygulama giriş noktası ve Admin (runas) kontrolü
-├── app.manifest                    # Yönetici (requireAdministrator) ve DPI ayarları
+├── WinRamOptimizer.csproj         # .NET 8 WinForms proje dosyası ve paketler
+├── Program.cs                      # Admin (runas) kontrolü ve uygulama başlangıcı
+├── app.manifest                    # Yönetici (requireAdministrator) manifesti
 │
 ├── Core/                           # Çekirdek Mantık ve Analizörler
-│   ├── SystemAnalyzer.cs          # Tüm analiz süreçlerini yöneten ana orkestratör
+│   ├── ApplicationClassifier.cs   # Process tür sınıflandırması ve Aktif Pencere tespiti
+│   ├── SystemAnalyzer.cs          # Tüm tarama süreçlerini yöneten orkestratör
 │   ├── RamAnalyzer.cs             # RAM kullanım bilgileri ve kazanım hesaplaması
-│   ├── ProcessAnalyzer.cs         # Process tarama, sınıflandırma ve skorlama
-│   ├── ServiceAnalyzer.cs         # Servis tarama, WMI detayları ve bağımlılık kontrolü
-│   ├── StartupAnalyzer.cs         # Registry, Klasör ve Task Scheduler tarayıcı
-│   ├── SafetyManager.cs           # Kritik sistem koruma ve güvenlik kuralları
-│   └── OptimizationEngine.cs      # Optimizasyon motoru ve öneri oluşturucu
+│   ├── ProcessAnalyzer.cs         # Process tarama ve skorlama
+│   ├── ServiceAnalyzer.cs         # Servis tarama, WMI ve donanım korumaları
+│   ├── StartupAnalyzer.cs         # Registry ve Klasör başlangıç tarayıcı
+│   ├── ScheduledTaskAnalyzer.cs   # Windows Görev Zamanlayıcı (Schtasks) tarayıcısı
+│   ├── SafetyManager.cs           # Donanım, sürücü ve sistem güvenlik koruma katmanı
+│   └── OptimizationEngine.cs      # Batch optimizasyon motoru ve mod yöneticisi
 │
 ├── Models/                         # Veri Modelleri
-│   ├── ProcessInfoModel.cs        # Process detayları ve risk seviyeleri
-│   ├── ServiceInfoModel.cs        # Servis kategorileri ve durum bilgileri
+│   ├── ProcessInfoModel.cs        # Process detayları ve aktif pencere durumu
+│   ├── ServiceInfoModel.cs        # Servis kategorileri ve donanım etiketi
 │   ├── StartupItemModel.cs        # Başlangıç öğeleri modeli
-│   ├── OptimizationResult.cs      # Optimizasyon sonuç ve rapor modeli
-│   └── SystemSnapshot.cs          # Geri alma (rollback) snapshot modeli
+│   ├── ScheduledTaskInfoModel.cs  # Scheduled Task modeli ve kategorileri
+│   ├── OptimizationResult.cs      # Gerçek kazanım ve sonuç raporu modeli
+│   └── SystemSnapshot.cs          # Snapshot ve geri alma modelleri
 │
 ├── Services/                       # Servis Katmanı
-│   ├── ProcessManager.cs          # Güvenli process sonlandırma işlemleri
-│   ├── WindowsServiceManager.cs    # Windows servis durdurma/başlatma/yapılandırma
-│   ├── StartupManager.cs          # Başlangıç öğelerini aktif/pasif yapma
-│   ├── RestorePointService.cs     # Snapshot ve Windows System Restore Point servisi
-│   ├── MemoryService.cs           # Win32 Native RAM ve Working Set API çağrıları
-│   └── LogService.cs              # Thread-safe dosya loglama servisi
+│   ├── ProcessManager.cs          # Güvenli process sonlandırma
+│   ├── WindowsServiceManager.cs    # Windows servis durdurma / Manuel yapma
+│   ├── StartupManager.cs          # Başlangıç öğelerini devre dışı bırakma
+│   ├── ScheduledTaskManager.cs    # Scheduled Task kapatma / açma servisi
+│   ├── ProcessRestartDetector.cs  # Kapatılan processlerin yeniden başlama kontrolü
+│   ├── RestorePointService.cs     # Snapshot JSON ve Windows Restore Point
+│   ├── MemoryService.cs           # Win32 Native RAM API servisi
+│   └── LogService.cs              # Thread-safe loglama servisi
 │
 ├── Config/                         # JSON Yapılandırma Dosyaları
 │   ├── protected-services.json    # Dokunulmaz korumalı Windows servis listesi
@@ -99,12 +94,12 @@ WinRamOptimizer/
 │   └── process-rules.json         # Kritik ve bilinen process kuralları
 │
 ├── UI/                             # Kullanıcı Arayüzü Formları
-│   ├── MainForm.cs                # Ana ekran dashboard, grafik ve navigasyon
-│   ├── ProcessesForm.cs           # Process detay tablosu ve arama ekranı
-│   ├── ServicesForm.cs            # Servis detay tablosu ve bağımlılık ekranı
-│   ├── StartupForm.cs             # Başlangıç programları yönetim ekranı
-│   ├── OptimizationDialog.cs      # Akıllı optimizasyon seçim diyaloğu
-│   └── SettingsForm.cs            # Profiller, Working Set Trim ve ayarlar penceresi
+│   ├── MainForm.cs                # Mod seçicili V2 Dashboard ve canlı RAM grafiği
+│   ├── ProcessesForm.cs           # Checkbox filtreli Process DataGridView ekranı
+│   ├── ServicesForm.cs            # Checkbox filtreli Servis DataGridView ekranı
+│   ├── StartupForm.cs             # Checkbox filtreli Başlangıç DataGridView ekranı
+│   ├── OptimizationDialog.cs      # Filtre butonlu ve canlı sayaçlı seçim penceresi
+│   └── SettingsForm.cs            # Sistem profilleri ve ayarlar penceresi
 │
 ├── Logs/                           # Uygulama çalışma kayıtları (app.log)
 └── Backups/                        # Geri alma snapshot dosyaları (JSON)
@@ -122,26 +117,10 @@ WinRamOptimizer/
 
 ## ⚡ Tek Tıkla Kurulum ve Çalıştırma (PowerShell)
 
-Aşağıdaki PowerShell komutunu **Yönetici olarak açılmış PowerShell** penceresine yapıştırarak projeyi klonlayabilir, derleyebilir ve doğrudan çalıştırabilirsiniz:
+Aşağıdaki komutu **Yönetici olarak açılmış PowerShell** penceresine yapıştırarak projeyi klonlayabilir, derleyebilir ve doğrudan çalıştırabilirsiniz:
 
 ```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force; git clone https://github.com/cumakaya0000/ramoptimizasyonu.git WinRamOptimizerApp; cd WinRamOptimizerApp; dotnet build --configuration Release; Start-Process ".\bin\Release\net8.0-windows\win-x64\WinRamOptimizer.exe" -Verb RunAs
-```
-
-Veya adım adım çalıştırmak için:
-
-```powershell
-# 1. Depoyu klonlayın
-git clone https://github.com/cumakaya0000/ramoptimizasyonu.git
-
-# 2. Klasöre girin
-cd ramoptimizasyonu
-
-# 3. Derleyin
-dotnet build --configuration Release
-
-# 4. Yönetici olarak çalıştırın
-Start-Process ".\bin\Release\net8.0-windows\win-x64\WinRamOptimizer.exe" -Verb RunAs
 ```
 
 ---

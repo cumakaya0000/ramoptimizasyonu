@@ -74,7 +74,8 @@ public class ServiceAnalyzer
             DisplayName = sc.DisplayName,
             Status = sc.Status.ToString(),
             IsProtected = _safetyManager.IsProtectedService(sc.ServiceName),
-            CanDisable = _safetyManager.CanDisableService(sc.ServiceName),
+            CanDisable = _safetyManager.CanDisableService(sc.ServiceName, sc.DisplayName),
+            CanSetManual = _safetyManager.CanDisableService(sc.ServiceName, sc.DisplayName)
         };
 
         // WMI details
@@ -83,6 +84,7 @@ public class ServiceAnalyzer
             model.Description = wmi.Description;
             model.StartType = wmi.StartMode;
             model.EstimatedRamBytes = wmi.ProcessId > 0 ? GetProcessRam(wmi.ProcessId) : 0;
+            model.IsHardwareService = !_safetyManager.CanDisableService(sc.ServiceName, sc.DisplayName, wmi.PathName);
         }
         else
         {
@@ -108,7 +110,7 @@ public class ServiceAnalyzer
 
     private void ClassifyService(ServiceInfoModel model)
     {
-        if (model.IsProtected)
+        if (model.IsProtected || model.IsHardwareService)
         {
             model.Category = ServiceCategory.Critical;
             model.Risk = RiskLevel.Critical;
@@ -145,9 +147,9 @@ public class ServiceAnalyzer
 
     private static void BuildRecommendation(ServiceInfoModel model)
     {
-        if (model.Category == ServiceCategory.Critical)
+        if (model.Category == ServiceCategory.Critical || model.IsHardwareService)
         {
-            model.Recommendation = "⛔ Kritik sistem servisi – dokunmayın.";
+            model.Recommendation = "⛔ Kritik / Donanım servisi – dokunmayın.";
         }
         else if (model.Category == ServiceCategory.Safe && model.Status == "Running")
         {
@@ -155,7 +157,7 @@ public class ServiceAnalyzer
         }
         else if (model.Category == ServiceCategory.Optional)
         {
-            model.Recommendation = "⚠️ Kullanmıyorsanız devre dışı bırakabilirsiniz.";
+            model.Recommendation = "⚠️ Kullanmıyorsanız devre dışı bırakabilir veya Manual yapabilirsiniz.";
         }
         else if (model.Category == ServiceCategory.Unknown)
         {
@@ -173,7 +175,7 @@ public class ServiceAnalyzer
         try
         {
             using var searcher = new ManagementObjectSearcher(
-                "SELECT Name, Description, StartMode, ProcessId FROM Win32_Service");
+                "SELECT Name, Description, StartMode, ProcessId, PathName FROM Win32_Service");
             foreach (ManagementObject obj in searcher.Get())
             {
                 try
@@ -184,7 +186,8 @@ public class ServiceAnalyzer
                     {
                         Description = obj["Description"]?.ToString() ?? string.Empty,
                         StartMode = obj["StartMode"]?.ToString() ?? string.Empty,
-                        ProcessId = Convert.ToInt32(obj["ProcessId"] ?? 0)
+                        ProcessId = Convert.ToInt32(obj["ProcessId"] ?? 0),
+                        PathName = obj["PathName"]?.ToString() ?? string.Empty
                     };
                 }
                 catch { }
@@ -209,6 +212,7 @@ public class ServiceAnalyzer
         public string Description { get; init; } = string.Empty;
         public string StartMode { get; init; } = string.Empty;
         public int ProcessId { get; init; }
+        public string PathName { get; init; } = string.Empty;
     }
 }
 

@@ -1,3 +1,5 @@
+using WinRamOptimizer.Core;
+
 namespace WinRamOptimizer.Models;
 
 public enum ProcessCategory
@@ -27,6 +29,8 @@ public class ProcessInfoModel
     public bool IsSignedByMicrosoft { get; set; }
     public bool IsSystemProcess { get; set; }
     public bool IsUserApplication { get; set; }
+    public bool IsActiveWindow { get; set; } // Currently active foreground user application
+    public ApplicationCategory AppCategory { get; set; } = ApplicationCategory.Unknown;
     public ProcessCategory Category { get; set; }
     public RiskLevel Risk { get; set; }
     public string Recommendation { get; set; } = string.Empty;
@@ -62,4 +66,6 @@ public class ProcessInfoModel
         RiskLevel.Critical => "CRITICAL",
         _ => "UNKNOWN"
     };
+
+    public string AppCategoryDisplay => ApplicationClassifier.GetCategoryDisplayName(AppCategory);
 }

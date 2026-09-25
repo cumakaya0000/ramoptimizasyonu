@@ -23,6 +23,9 @@ public class SystemSnapshot
     // Disabled startup entries (by name)
     public List<string> DisabledStartupEntries { get; set; } = new();
 
+    // Scheduled Tasks snapshot: taskPath -> state (Enabled/Disabled)
+    public Dictionary<string, bool> ScheduledTaskStates { get; set; } = new();
+
     // Running processes at snapshot time
     public List<string> RunningProcessNames { get; set; } = new();
 
@@ -34,7 +37,7 @@ public class SystemSnapshot
 
 public class AppliedChange
 {
-    public string ChangeType { get; set; } = string.Empty; // "ServiceStopped", "ServiceStartTypeChanged", "StartupDisabled", "ProcessTerminated"
+    public string ChangeType { get; set; } = string.Empty; // "ServiceStopped", "ServiceStartTypeChanged", "StartupDisabled", "ProcessTerminated", "ScheduledTaskDisabled"
     public string TargetName { get; set; } = string.Empty;
     public string OldValue { get; set; } = string.Empty;
     public string NewValue { get; set; } = string.Empty;

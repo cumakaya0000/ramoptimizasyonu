@@ -10,7 +10,6 @@ public partial class MainForm : Form
     // ─── Colors ───────────────────────────────────────────────────────────────
     private static readonly Color BgDark = Color.FromArgb(18, 18, 18);
     private static readonly Color BgCard = Color.FromArgb(30, 30, 30);
-    private static readonly Color BgCardHover = Color.FromArgb(40, 40, 40);
     private static readonly Color AccentBlue = Color.FromArgb(0, 120, 212);
     private static readonly Color AccentGreen = Color.FromArgb(16, 185, 129);
     private static readonly Color AccentOrange = Color.FromArgb(245, 158, 11);
@@ -45,10 +44,16 @@ public partial class MainForm : Form
     private Label _lblBgProcessCount = null!;
     private Label _lblServiceCount = null!;
     private Label _lblStartupCount = null!;
-    private Label _lblOptimizable = null!;
+    private Label _lblTaskCount = null!;
+
+    // Mode Selector & One-Click Button (Requirement 3 & 14)
+    private ComboBox _cboMode = null!;
+    private Label _lblModeDesc = null!;
+    private Button _btnOneClickClean = null!;
     private Button _btnAnalyze = null!;
     private Button _btnOptimize = null!;
     private Button _btnRestore = null!;
+
     private ProgressBar _pbProgress = null!;
     private Label _lblStatus = null!;
 
@@ -63,7 +68,7 @@ public partial class MainForm : Form
         // Initial RAM read
         UpdateRamDisplay();
 
-        LogService.Info("WinRam Optimizer started.");
+        LogService.Info("WinRam Optimizer V2 started.");
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -73,9 +78,9 @@ public partial class MainForm : Form
     private void InitializeComponents()
     {
         SuspendLayout();
-        Text = "WinRam Optimizer";
-        Size = new Size(940, 720);
-        MinimumSize = new Size(840, 640);
+        Text = "WinRam Optimizer V2";
+        Size = new Size(980, 780);
+        MinimumSize = new Size(860, 680);
         BackColor = BgDark;
         ForeColor = TextPrimary;
         Font = new Font("Segoe UI", 9f, FontStyle.Regular);
@@ -90,13 +95,13 @@ public partial class MainForm : Form
     private void BuildLayout()
     {
         // ─── Title bar ────────────────────────────────────────────────────────
-        var pnlHeader = CreateCard(new Rectangle(0, 0, 940, 56));
+        var pnlHeader = CreateCard(new Rectangle(0, 0, 980, 56));
         pnlHeader.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         pnlHeader.BackColor = Color.FromArgb(12, 12, 12);
 
         _lblTitle = new Label
         {
-            Text = "⚡ WinRam Optimizer",
+            Text = "⚡ WinRam Optimizer V2",
             Font = new Font("Segoe UI", 15f, FontStyle.Bold),
             ForeColor = AccentBlue,
             AutoSize = true,
@@ -104,18 +109,18 @@ public partial class MainForm : Form
         };
         _lblVersion = new Label
         {
-            Text = "v1.0  |  Windows 10/11",
+            Text = "v2.0 Pro  |  Windows 10/11",
             Font = new Font("Segoe UI", 8f),
             ForeColor = TextMuted,
             AutoSize = true,
-            Location = new Point(230, 20)
+            Location = new Point(260, 20)
         };
 
         // Navigation buttons
-        var btnProcesses = NavButton("🔧 Processler", 580);
-        var btnServices = NavButton("⚙️ Servisler", 680);
-        var btnStartup = NavButton("🚀 Başlangıç", 775);
-        var btnSettings = NavButton("⚙ Ayarlar", 868);
+        var btnProcesses = NavButton("🔧 Processler", 610);
+        var btnServices = NavButton("⚙️ Servisler", 705);
+        var btnStartup = NavButton("🚀 Başlangıç", 800);
+        var btnSettings = NavButton("⚙ Ayarlar", 892);
 
         btnProcesses.Click += (_, _) => OpenProcesses();
         btnServices.Click += (_, _) => OpenServices();
@@ -126,13 +131,13 @@ public partial class MainForm : Form
         Controls.Add(pnlHeader);
 
         // ─── RAM card ─────────────────────────────────────────────────────────
-        _pnlRam = CreateCard(new Rectangle(12, 68, 460, 180));
+        _pnlRam = CreateCard(new Rectangle(12, 68, 480, 180));
         _pnlRam.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         BuildRamCard();
         Controls.Add(_pnlRam);
 
         // ─── Chart card ──────────────────────────────────────────────────────
-        _pnlChart = CreateCard(new Rectangle(484, 68, 440, 180));
+        _pnlChart = CreateCard(new Rectangle(504, 68, 460, 180));
         _pnlChart.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         _pnlChart.Paint += PnlChart_Paint;
         var lblChartTitle = new Label
@@ -147,44 +152,75 @@ public partial class MainForm : Form
         Controls.Add(_pnlChart);
 
         // ─── Stats card ───────────────────────────────────────────────────────
-        _pnlStats = CreateCard(new Rectangle(12, 260, 912, 90));
+        _pnlStats = CreateCard(new Rectangle(12, 260, 952, 90));
         _pnlStats.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         BuildStatsCard();
         Controls.Add(_pnlStats);
 
-        // ─── Optimizable RAM card ─────────────────────────────────────────────
-        var pnlOpt = CreateCard(new Rectangle(12, 362, 912, 50));
-        pnlOpt.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-        _lblOptimizable = new Label
-        {
-            Text = "🔍 Tahmini optimize edilebilir RAM: Analiz yapılmadı",
-            Font = new Font("Segoe UI", 10f),
-            ForeColor = AccentOrange,
-            AutoSize = true,
-            Location = new Point(16, 14)
-        };
-        pnlOpt.Controls.Add(_lblOptimizable);
-        Controls.Add(pnlOpt);
+        // ─── Mode Selector Panel (Requirement 14) ────────────────────────────
+        var pnlMode = CreateCard(new Rectangle(12, 360, 952, 54));
+        pnlMode.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
-        // ─── Buttons ──────────────────────────────────────────────────────────
-        _btnAnalyze = CreateMainButton("🔍  SİSTEMİ ANALİZ ET", AccentBlue, new Rectangle(12, 428, 300, 52));
+        var lblModeTitle = new Label
+        {
+            Text = "🎯 Temizlik Modu:",
+            Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+            ForeColor = TextPrimary,
+            AutoSize = true,
+            Location = new Point(16, 16)
+        };
+
+        _cboMode = new ComboBox
+        {
+            Location = new Point(135, 12),
+            Size = new Size(130, 28),
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            BackColor = Color.FromArgb(42, 42, 42),
+            ForeColor = TextPrimary,
+            FlatStyle = FlatStyle.Flat
+        };
+        _cboMode.Items.AddRange(new[] { "Güvenli", "Agresif", "Manuel" });
+        _cboMode.SelectedIndex = 0; // Default: Güvenli
+        _cboMode.SelectedIndexChanged += CboMode_SelectedIndexChanged;
+
+        _lblModeDesc = new Label
+        {
+            Text = "Güvenli Mod: Sadece kesin olarak güvenli olduğu bilinen kullanıcı uygulamalarını ve updater bileşenlerini temizler.",
+            Font = new Font("Segoe UI", 8f),
+            ForeColor = AccentGreen,
+            AutoSize = false,
+            Size = new Size(660, 32),
+            Location = new Point(275, 14)
+        };
+
+        pnlMode.Controls.AddRange(new Control[] { lblModeTitle, _cboMode, _lblModeDesc });
+        Controls.Add(pnlMode);
+
+        // ─── Action Buttons Panel ─────────────────────────────────────────────
+        // Requirement 3: Big TRUE ONE-CLICK RAM CLEAN button
+        _btnOneClickClean = CreateMainButton("⚡ TEK TIK RAM TEMİZLE", AccentGreen, new Rectangle(12, 424, 380, 56));
+        _btnOneClickClean.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
+        _btnOneClickClean.Click += BtnOneClickClean_Click;
+        Controls.Add(_btnOneClickClean);
+
+        _btnAnalyze = CreateMainButton("🔍 SİSTEMİ ANALİZ ET", AccentBlue, new Rectangle(402, 424, 180, 56));
         _btnAnalyze.Click += BtnAnalyze_Click;
         Controls.Add(_btnAnalyze);
 
-        _btnOptimize = CreateMainButton("⚡  AKILLI OPTİMİZASYON", AccentGreen, new Rectangle(324, 428, 300, 52));
+        _btnOptimize = CreateMainButton("⚡ DETAYLI İNCELE", Color.FromArgb(0, 100, 180), new Rectangle(592, 424, 180, 56));
         _btnOptimize.Enabled = false;
         _btnOptimize.Click += BtnOptimize_Click;
         Controls.Add(_btnOptimize);
 
-        _btnRestore = CreateMainButton("↩  DEĞİŞİKLİKLERİ GERİ AL", Color.FromArgb(100, 60, 60), new Rectangle(636, 428, 288, 52));
+        _btnRestore = CreateMainButton("↩ GERİ AL", Color.FromArgb(100, 50, 50), new Rectangle(782, 424, 182, 56));
         _btnRestore.Click += BtnRestore_Click;
         Controls.Add(_btnRestore);
 
         // ─── Progress bar & status ────────────────────────────────────────────
         _pbProgress = new ProgressBar
         {
-            Location = new Point(12, 496),
-            Size = new Size(912, 8),
+            Location = new Point(12, 492),
+            Size = new Size(952, 10),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
             Style = ProgressBarStyle.Continuous,
             ForeColor = AccentBlue,
@@ -195,21 +231,21 @@ public partial class MainForm : Form
 
         _lblStatus = new Label
         {
-            Text = string.Empty,
+            Text = "Hazır. '⚡ TEK TIK RAM TEMİZLE' butonuna basarak optimizasyonu başlatabilirsiniz.",
             Font = new Font("Segoe UI", 9f),
             ForeColor = TextSecondary,
             AutoSize = true,
-            Location = new Point(12, 510)
+            Location = new Point(12, 508)
         };
         Controls.Add(_lblStatus);
 
         // ─── Log area ─────────────────────────────────────────────────────────
-        var pnlLog = CreateCard(new Rectangle(12, 538, 912, 140));
+        var pnlLog = CreateCard(new Rectangle(12, 535, 952, 195));
         pnlLog.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
 
         var lblLogTitle = new Label
         {
-            Text = "📋 Aktivite Logu",
+            Text = "📋 Aktivite & Optimizasyon Raporu",
             Font = new Font("Segoe UI", 9f, FontStyle.Bold),
             ForeColor = TextSecondary,
             AutoSize = true,
@@ -219,11 +255,11 @@ public partial class MainForm : Form
         var rtbLog = new RichTextBox
         {
             Location = new Point(8, 28),
-            Size = new Size(896, 104),
+            Size = new Size(936, 158),
             Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
             BackColor = Color.FromArgb(18, 18, 18),
             ForeColor = TextSecondary,
-            Font = new Font("Consolas", 8f),
+            Font = new Font("Consolas", 8.5f),
             ReadOnly = true,
             BorderStyle = BorderStyle.None,
             ScrollBars = RichTextBoxScrollBars.Vertical
@@ -276,7 +312,7 @@ public partial class MainForm : Form
         _pbRam = new ProgressBar
         {
             Location = new Point(12, 124),
-            Size = new Size(436, 16),
+            Size = new Size(456, 16),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
             Style = ProgressBarStyle.Continuous,
             Minimum = 0,
@@ -289,7 +325,7 @@ public partial class MainForm : Form
             Font = new Font("Segoe UI", 20f, FontStyle.Bold),
             ForeColor = AccentBlue,
             AutoSize = true,
-            Location = new Point(340, 50)
+            Location = new Point(360, 50)
         };
 
         _pnlRam.Controls.AddRange(new Control[]
@@ -306,6 +342,7 @@ public partial class MainForm : Form
             ("🔲", "Arka Plan", _lblBgProcessCount = StatLabel()),
             ("⚙️", "Servisler", _lblServiceCount = StatLabel()),
             ("🚀", "Başlangıç", _lblStartupCount = StatLabel()),
+            ("📅", "Tasks", _lblTaskCount = StatLabel()),
         };
 
         int x = 16;
@@ -314,20 +351,20 @@ public partial class MainForm : Form
             var grp = new Panel
             {
                 Location = new Point(x, 8),
-                Size = new Size(210, 74),
+                Size = new Size(175, 74),
                 BackColor = Color.Transparent
             };
 
-            var lblIcon = new Label { Text = icon, Font = new Font("Segoe UI", 18f), AutoSize = true, Location = new Point(0, 8), ForeColor = AccentBlue };
-            var lblName = new Label { Text = label, Font = new Font("Segoe UI", 8f), ForeColor = TextMuted, AutoSize = true, Location = new Point(40, 8) };
-            lbl.Location = new Point(40, 28);
-            lbl.Font = new Font("Segoe UI", 18f, FontStyle.Bold);
+            var lblIcon = new Label { Text = icon, Font = new Font("Segoe UI", 16f), AutoSize = true, Location = new Point(0, 8), ForeColor = AccentBlue };
+            var lblName = new Label { Text = label, Font = new Font("Segoe UI", 8f), ForeColor = TextMuted, AutoSize = true, Location = new Point(36, 8) };
+            lbl.Location = new Point(36, 28);
+            lbl.Font = new Font("Segoe UI", 16f, FontStyle.Bold);
             lbl.ForeColor = TextPrimary;
             lbl.Text = "–";
 
             grp.Controls.AddRange(new Control[] { lblIcon, lblName, lbl });
             _pnlStats.Controls.Add(grp);
-            x += 220;
+            x += 185;
         }
     }
 
@@ -376,8 +413,27 @@ public partial class MainForm : Form
         return btn;
     }
 
+    private void CboMode_SelectedIndexChanged(object? sender, EventArgs e)
+    {
+        switch (_cboMode.SelectedIndex)
+        {
+            case 0: // Safe
+                _lblModeDesc.Text = "Güvenli Mod: Sadece kesin olarak güvenli olduğu bilinen kullanıcı uygulamalarını ve updater bileşenlerini temizler.";
+                _lblModeDesc.ForeColor = AccentGreen;
+                break;
+            case 1: // Aggressive
+                _lblModeDesc.Text = "Agresif Mod: Kullanılmayan arka plan uygulamalarını, opsiyonel servisleri ve otomatik başlangıç öğelerini kapsamlı şekilde temizler. Windows'un kritik bileşenlerine dokunmaz.";
+                _lblModeDesc.ForeColor = AccentOrange;
+                break;
+            case 2: // Manual
+                _lblModeDesc.Text = "Manuel Mod: Tüm optimizasyon adaylarını checkbox listesinde gösterir. Kararları siz verirsiniz.";
+                _lblModeDesc.ForeColor = AccentBlue;
+                break;
+        }
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
-    //  TIMERS
+    //  TIMERS & CHART
     // ──────────────────────────────────────────────────────────────────────────
 
     private void SetupTimers()
@@ -390,10 +446,6 @@ public partial class MainForm : Form
         };
         _ramTimer.Start();
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  RAM DISPLAY
-    // ──────────────────────────────────────────────────────────────────────────
 
     private void UpdateRamDisplay()
     {
@@ -410,7 +462,6 @@ public partial class MainForm : Form
             var pct = (int)info.UsagePercent;
             _pbRam.Value = Math.Clamp(pct, 0, 100);
 
-            // Color coding
             _lblRamPct.ForeColor = pct switch
             {
                 < 60 => AccentGreen,
@@ -419,14 +470,9 @@ public partial class MainForm : Form
             };
         });
 
-        // Add to history
         while (_ramHistory.Count >= 60) _ramHistory.Dequeue();
         _ramHistory.Enqueue(info.UsagePercent);
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  CHART PAINT
-    // ──────────────────────────────────────────────────────────────────────────
 
     private void PnlChart_Paint(object? sender, PaintEventArgs e)
     {
@@ -439,7 +485,6 @@ public partial class MainForm : Form
         var chartRect = new Rectangle(10, 30, _pnlChart.Width - 20, _pnlChart.Height - 50);
         if (chartRect.Width <= 0 || chartRect.Height <= 0) return;
 
-        // Background grid lines
         using var gridPen = new Pen(Color.FromArgb(40, 255, 255, 255), 1);
         for (int i = 0; i <= 4; i++)
         {
@@ -449,7 +494,6 @@ public partial class MainForm : Form
                 chartRect.Left - 2, y - 7, new StringFormat { Alignment = StringAlignment.Far });
         }
 
-        // Chart line
         float stepX = (float)chartRect.Width / Math.Max(1, pts.Length - 1);
         var points = new PointF[pts.Length];
         for (int i = 0; i < pts.Length; i++)
@@ -459,7 +503,6 @@ public partial class MainForm : Form
             points[i] = new PointF(x, y);
         }
 
-        // Fill area under chart
         var fillPts = new List<PointF>(points) { new(points[^1].X, chartRect.Bottom), new(points[0].X, chartRect.Bottom) };
         using var fillBrush = new LinearGradientBrush(chartRect, Color.FromArgb(60, 0, 120, 212), Color.Transparent, 90f);
         g.FillPolygon(fillBrush, fillPts.ToArray());
@@ -467,21 +510,103 @@ public partial class MainForm : Form
         using var linePen = new Pen(AccentBlue, 2f);
         g.DrawLines(linePen, points);
 
-        // Current value indicator
         if (pts.Length > 0)
         {
             var last = points[^1];
             g.FillEllipse(Brushes.White, last.X - 3, last.Y - 3, 6, 6);
         }
 
-        // Time labels
         g.DrawString("60s", new Font("Segoe UI", 7f), Brushes.Gray, chartRect.Left, chartRect.Bottom + 2);
         g.DrawString("0s", new Font("Segoe UI", 7f), Brushes.Gray, chartRect.Right - 14, chartRect.Bottom + 2);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    //  ANALYSIS
+    //  REQUIREMENT 3: TRUE ONE-CLICK RAM OPTIMIZATION
     // ──────────────────────────────────────────────────────────────────────────
+
+    private async void BtnOneClickClean_Click(object? sender, EventArgs e)
+    {
+        _analysisCts?.Cancel();
+        _analysisCts = new CancellationTokenSource();
+        var ct = _analysisCts.Token;
+
+        var selectedMode = (OptimizationMode)_cboMode.SelectedIndex;
+
+        SetBusy(true);
+
+        try
+        {
+            // 1. Analyze
+            var progress = new Progress<AnalysisProgress>(p =>
+            {
+                InvokeIfRequired(() =>
+                {
+                    _pbProgress.Value = Math.Clamp((int)(p.Percent * 0.3), 0, 100);
+                    _lblStatus.Text = $"[Analiz] {p.Step}";
+                });
+            });
+
+            _lastAnalysis = await _analyzer!.RunFullAnalysisAsync(progress, ct);
+            UpdateStatsDisplay(_lastAnalysis);
+
+            // 2. Build suggestions
+            var suggestions = _engine!.BuildSuggestions(_lastAnalysis, selectedMode);
+
+            if (!suggestions.Any(s => s.IsAutoSelected))
+            {
+                MessageBox.Show("Seçili mod için herhangi bir temizlik önerisi bulunamadı. Sisteminiz optimize görünüyor.",
+                    "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // If mode is Manual, open dialog
+            if (selectedMode == OptimizationMode.Manual)
+            {
+                using var dlg = new OptimizationDialog(suggestions, _engine);
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                suggestions = dlg.SelectedSuggestions;
+            }
+
+            // 3. System Restore Point (optional warning)
+            if (!_engine.CreateWindowsRestorePoint(out var rpError))
+            {
+                LogService.Warning($"System Restore Point skipped: {rpError}");
+            }
+
+            // 4. Batch Execution with progress
+            var optProgress = new Progress<OptimizationProgress>(p =>
+            {
+                InvokeIfRequired(() =>
+                {
+                    _pbProgress.Value = Math.Clamp(30 + (int)(p.Percent * 0.7), 0, 100);
+                    _lblStatus.Text = $"[Temizlik] {p.Message}";
+                });
+            });
+
+            var result = await _engine.ExecuteBatchAsync(suggestions, selectedMode, optProgress, ct);
+
+            // 5. Requirement 13: Detailed Result Report
+            InvokeIfRequired(() =>
+            {
+                UpdateRamDisplay();
+                ShowDetailedResultReport(result);
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            InvokeIfRequired(() => _lblStatus.Text = "Optimizasyon iptal edildi.");
+        }
+        catch (Exception ex)
+        {
+            LogService.Error("One-click optimization failed", ex);
+            MessageBox.Show($"Optimizasyon sırasında hata oluştu:\n{ex.Message}", "Hata",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            InvokeIfRequired(() => SetBusy(false));
+        }
+    }
 
     private async void BtnAnalyze_Click(object? sender, EventArgs e)
     {
@@ -489,7 +614,7 @@ public partial class MainForm : Form
         _analysisCts = new CancellationTokenSource();
         var ct = _analysisCts.Token;
 
-        SetAnalyzing(true);
+        SetBusy(true);
 
         try
         {
@@ -518,46 +643,14 @@ public partial class MainForm : Form
         catch (Exception ex)
         {
             LogService.Error("Analysis failed", ex);
-            InvokeIfRequired(() =>
-            {
-                _lblStatus.Text = "❌ Analiz başarısız.";
-                MessageBox.Show($"Analiz sırasında hata oluştu:\n{ex.Message}", "Hata",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            });
+            MessageBox.Show($"Analiz sırasında hata oluştu:\n{ex.Message}", "Hata",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
         {
-            InvokeIfRequired(() => SetAnalyzing(false));
+            InvokeIfRequired(() => SetBusy(false));
         }
     }
-
-    private void UpdateStatsDisplay(SystemAnalysisResult analysis)
-    {
-        _lblProcessCount.Text = analysis.TotalProcessCount.ToString();
-        _lblBgProcessCount.Text = analysis.BackgroundProcessCount.ToString();
-        _lblServiceCount.Text = $"{analysis.RunningServiceCount}/{analysis.ServiceCount}";
-        _lblStartupCount.Text = analysis.StartupCount.ToString();
-
-        long optimBytes = analysis.EstimatedOptimizableBytes;
-        double optimMB = optimBytes / (1024.0 * 1024.0);
-        string optimStr = optimMB >= 1024
-            ? $"{optimBytes / (1024.0 * 1024.0 * 1024.0):F1} GB"
-            : $"{optimMB:F0} MB";
-
-        _lblOptimizable.Text = $"🔍 Tahmini optimize edilebilir RAM: ~{optimStr}";
-    }
-
-    private void SetAnalyzing(bool analyzing)
-    {
-        _btnAnalyze.Enabled = !analyzing;
-        _pbProgress.Visible = analyzing;
-        _pbProgress.Value = 0;
-        if (!analyzing) _pbProgress.Value = 0;
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  OPTIMIZATION
-    // ──────────────────────────────────────────────────────────────────────────
 
     private async void BtnOptimize_Click(object? sender, EventArgs e)
     {
@@ -567,47 +660,32 @@ public partial class MainForm : Form
             return;
         }
 
-        var suggestions = _engine!.BuildSuggestions(_lastAnalysis);
-        if (!suggestions.Any())
-        {
-            MessageBox.Show("Optimizasyon önerisi bulunamadı. Sisteminiz zaten optimize görünüyor.",
-                "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            return;
-        }
+        var mode = (OptimizationMode)_cboMode.SelectedIndex;
+        var suggestions = _engine!.BuildSuggestions(_lastAnalysis, mode);
 
         using var dlg = new OptimizationDialog(suggestions, _engine);
         if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
-        // Try Windows Restore Point
-        if (!_engine.CreateWindowsRestorePoint(out var rpError))
-        {
-            var cont = MessageBox.Show(
-                $"Windows Restore Point oluşturulamadı:\n{rpError}\n\nYine de devam etmek istiyor musunuz?",
-                "Uyarı", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-            if (cont != DialogResult.Yes) return;
-        }
-
         var selected = dlg.SelectedSuggestions;
-        if (!selected.Any())
-        {
-            MessageBox.Show("Hiçbir öğe seçilmedi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            return;
-        }
+        if (!selected.Any()) return;
 
-        SetAnalyzing(true);
-        _lblStatus.Text = "Optimizasyon uygulanıyor...";
+        SetBusy(true);
 
         try
         {
-            var progress = new Progress<string>(msg =>
-                InvokeIfRequired(() => _lblStatus.Text = msg));
+            var optProgress = new Progress<OptimizationProgress>(p =>
+                InvokeIfRequired(() =>
+                {
+                    _pbProgress.Value = Math.Clamp(p.Percent, 0, 100);
+                    _lblStatus.Text = p.Message;
+                }));
 
-            var result = await _engine.ExecuteAsync(selected, progress, CancellationToken.None);
+            var result = await _engine.ExecuteBatchAsync(selected, mode, optProgress, CancellationToken.None);
 
             InvokeIfRequired(() =>
             {
-                ShowOptimizationResult(result);
                 UpdateRamDisplay();
+                ShowDetailedResultReport(result);
             });
         }
         catch (Exception ex)
@@ -618,43 +696,9 @@ public partial class MainForm : Form
         }
         finally
         {
-            InvokeIfRequired(() =>
-            {
-                SetAnalyzing(false);
-                _lblStatus.Text = "Optimizasyon tamamlandı.";
-            });
+            InvokeIfRequired(() => SetBusy(false));
         }
     }
-
-    private static void ShowOptimizationResult(OptimizationResult result)
-    {
-        var sb = new System.Text.StringBuilder();
-        sb.AppendLine("╔══════════════════════════════════╗");
-        sb.AppendLine("║   OPTİMİZASYON TAMAMLANDI        ║");
-        sb.AppendLine("╠══════════════════════════════════╣");
-        sb.AppendLine($"║ Önce:   {result.RamBeforeBytes / (1024.0 * 1024.0 * 1024.0):F2} GB kullanılan RAM");
-        sb.AppendLine($"║ Sonra:  {result.RamAfterBytes / (1024.0 * 1024.0 * 1024.0):F2} GB kullanılan RAM");
-        sb.AppendLine($"║ Kazanç: ~{result.RamSavedDisplay}");
-        sb.AppendLine("╠══════════════════════════════════╣");
-        sb.AppendLine($"║ Kapatılan Process:   {result.ProcessesTerminated}");
-        sb.AppendLine($"║ Durdurulan Servis:   {result.ServicesStopped}");
-        sb.AppendLine($"║ Devre dışı Startup:  {result.StartupItemsDisabled}");
-        if (result.Errors.Any())
-        {
-            sb.AppendLine("╠══════════════════════════════════╣");
-            sb.AppendLine($"║ Hatalar ({result.Errors.Count}):");
-            foreach (var err in result.Errors.Take(5))
-                sb.AppendLine($"║  • {err[..Math.Min(err.Length, 30)]}");
-        }
-        sb.AppendLine("╚══════════════════════════════════╝");
-
-        MessageBox.Show(sb.ToString(), "Optimizasyon Sonucu",
-            MessageBoxButtons.OK, MessageBoxIcon.Information);
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  RESTORE
-    // ──────────────────────────────────────────────────────────────────────────
 
     private async void BtnRestore_Click(object? sender, EventArgs e)
     {
@@ -664,7 +708,7 @@ public partial class MainForm : Form
 
         if (confirm != DialogResult.Yes) return;
 
-        SetAnalyzing(true);
+        SetBusy(true);
         _lblStatus.Text = "Değişiklikler geri alınıyor...";
 
         try
@@ -681,42 +725,81 @@ public partial class MainForm : Form
         }
         finally
         {
-            SetAnalyzing(false);
+            SetBusy(false);
             _lblStatus.Text = "Geri alma tamamlandı.";
         }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    //  RESULT REPORT (REQUIREMENT 13)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private static void ShowDetailedResultReport(OptimizationResult result)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("╔═════════════════════════════════════════════╗");
+        sb.AppendLine("║        RAM OPTİMİZASYONU TAMAMLANDI         ║");
+        sb.AppendLine("╠═════════════════════════════════════════════╣");
+        sb.AppendLine($"║ ÖNCE:   {result.RamBeforeGB:F2} GB (%{result.UsagePercentBefore:F0})");
+        sb.AppendLine($"║ SONRA:  {result.RamAfterGB:F2} GB (%{result.UsagePercentAfter:F0})");
+        sb.AppendLine($"║ GERÇEK KAZANÇ: ~{result.RamSavedDisplay}");
+        sb.AppendLine("╠═════════════════════════════════════════════╣");
+        sb.AppendLine($"║ Kapatılan Process:       {result.ProcessesTerminated}");
+        sb.AppendLine($"║ Durdurulan Servis:       {result.ServicesStopped}");
+        sb.AppendLine($"║ Manuel Yapılan Servis:   {result.ServicesSetToManual}");
+        sb.AppendLine($"║ Devre Dışı Startup:      {result.StartupItemsDisabled}");
+        sb.AppendLine($"║ Devre Dışı Task (Görev): {result.ScheduledTasksDisabled}");
+        sb.AppendLine($"║ Başarısız İşlem:        {result.Errors.Count}");
+        sb.AppendLine($"║ Tekrar Başlayan:         {result.RestartedProcessCount}");
+
+        if (result.RestartedProcessNames.Any())
+        {
+            sb.AppendLine("╠═════════════════════════════════════════════╣");
+            sb.AppendLine("║ Tekrar Başlayan Processler:");
+            foreach (var r in result.RestartedProcessNames.Take(3))
+                sb.AppendLine($"║  ⚠️ {r}");
+        }
+
+        if (result.Errors.Any())
+        {
+            sb.AppendLine("╠═════════════════════════════════════════════╣");
+            sb.AppendLine("║ Hatalar:");
+            foreach (var err in result.Errors.Take(3))
+                sb.AppendLine($"║  ❌ {err[..Math.Min(err.Length, 35)]}");
+        }
+        sb.AppendLine("╚═════════════════════════════════════════════╝");
+
+        MessageBox.Show(sb.ToString(), "Optimizasyon Sonucu",
+            MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private void UpdateStatsDisplay(SystemAnalysisResult analysis)
+    {
+        _lblProcessCount.Text = analysis.TotalProcessCount.ToString();
+        _lblBgProcessCount.Text = analysis.BackgroundProcessCount.ToString();
+        _lblServiceCount.Text = $"{analysis.RunningServiceCount}/{analysis.ServiceCount}";
+        _lblStartupCount.Text = analysis.StartupCount.ToString();
+        _lblTaskCount.Text = analysis.ScheduledTaskCount.ToString();
+    }
+
+    private void SetBusy(bool busy)
+    {
+        _btnOneClickClean.Enabled = !busy;
+        _btnAnalyze.Enabled = !busy;
+        _btnOptimize.Enabled = !busy && _lastAnalysis != null;
+        _cboMode.Enabled = !busy;
+        _pbProgress.Visible = busy;
+        if (!busy) _pbProgress.Value = 0;
     }
 
     // ──────────────────────────────────────────────────────────────────────────
     //  NAVIGATION
     // ──────────────────────────────────────────────────────────────────────────
 
-    private void OpenProcesses()
-    {
-        using var frm = new ProcessesForm(_safetyManager, _lastAnalysis?.Processes);
-        frm.ShowDialog(this);
-    }
-
-    private void OpenServices()
-    {
-        using var frm = new ServicesForm(_safetyManager, _lastAnalysis?.Services);
-        frm.ShowDialog(this);
-    }
-
-    private void OpenStartup()
-    {
-        using var frm = new StartupForm(_safetyManager, _lastAnalysis?.StartupItems);
-        frm.ShowDialog(this);
-    }
-
-    private void OpenSettings()
-    {
-        using var frm = new SettingsForm();
-        frm.ShowDialog(this);
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  HELPERS
-    // ──────────────────────────────────────────────────────────────────────────
+    private void OpenProcesses() => new ProcessesForm(_safetyManager, _lastAnalysis?.Processes).ShowDialog(this);
+    private void OpenServices() => new ServicesForm(_safetyManager, _lastAnalysis?.Services).ShowDialog(this);
+    private void OpenStartup() => new StartupForm(_safetyManager, _lastAnalysis?.StartupItems).ShowDialog(this);
+    private void OpenSettings() => new SettingsForm().ShowDialog(this);
 
     private void InvokeIfRequired(Action action)
     {

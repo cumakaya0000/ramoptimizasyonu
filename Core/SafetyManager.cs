@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using WinRamOptimizer.Models;
 
 namespace WinRamOptimizer.Core;
 
@@ -10,6 +11,22 @@ public class SafetyManager
     private readonly HashSet<string> _protectedServices;
     private readonly HashSet<string> _protectedProcesses;
     private readonly HashSet<string> _safeServiceNames;
+
+    // Point 11: Hardware Vendors
+    private static readonly HashSet<string> ProtectedHardwareVendors = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Intel", "AMD", "Advanced Micro Devices", "NVIDIA", "NVIDIA Corporation",
+        "Realtek", "Realtek Semiconductor", "Lenovo", "Synaptics", "ELAN", "ELAN Microelectronics",
+        "Qualcomm", "MediaTek", "Asus", "ASUSTeK", "Dell", "HP", "Hewlett-Packard", "MSI", "Gigabyte", "Logitech"
+    };
+
+    // Point 11: Hardware Services & Drivers
+    private static readonly HashSet<string> ProtectedHardwareServiceKeywords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "wifi", "wlan", "ethernet", "netman", "bluetooth", "bth", "audio", "sound",
+        "display", "nvdimm", "nvidiagpu", "amdkmdag", "igfx", "keyboard", "mouse",
+        "touchpad", "synaptics", "elan", "usb", "power", "acpi", "hotkey", "fnkey"
+    };
 
     public SafetyManager()
     {
@@ -89,7 +106,7 @@ public class SafetyManager
     /// <summary>
     /// Returns true if the process can be safely terminated by the optimizer.
     /// </summary>
-    public bool CanTerminateProcess(string processName)
+    public bool CanTerminateProcess(string processName, int pid = -1)
     {
         if (string.IsNullOrWhiteSpace(processName)) return false;
 
@@ -99,9 +116,13 @@ public class SafetyManager
         if (_protectedProcesses.Contains(name)) return false;
         if (_protectedProcesses.Contains(processName)) return false;
 
+        // Point 10: Active foreground window protection
+        if (pid > 0 && pid == ApplicationClassifier.GetActiveWindowProcessId())
+            return false;
+
         // Never kill session 0 process names that look like Windows internals
         var forbidden = new[] { "svchost", "lsass", "csrss", "smss", "wininit", "services",
-                                 "system", "registry", "dwm", "winlogon" };
+                                 "system", "registry", "dwm", "winlogon", "explorer" };
         foreach (var f in forbidden)
             if (name.Equals(f, StringComparison.OrdinalIgnoreCase)) return false;
 
@@ -111,10 +132,37 @@ public class SafetyManager
     /// <summary>
     /// Returns true if the service can be stopped/disabled by the optimizer.
     /// </summary>
-    public bool CanDisableService(string serviceName)
+    public bool CanDisableService(string serviceName, string displayName = "", string publisher = "")
     {
         if (string.IsNullOrWhiteSpace(serviceName)) return false;
         if (_protectedServices.Contains(serviceName)) return false;
+
+        // Point 11: Hardware Services & Vendors protection
+        var combined = $"{serviceName} {displayName}".ToLowerInvariant();
+
+        // Check hardware keywords
+        foreach (var kw in ProtectedHardwareServiceKeywords)
+        {
+            if (combined.Contains(kw))
+            {
+                // Unless it's explicitly an updater or telemetry
+                if (!combined.Contains("update") && !combined.Contains("telemetry"))
+                    return false;
+            }
+        }
+
+        // Check hardware vendors
+        if (!string.IsNullOrEmpty(publisher))
+        {
+            foreach (var vendor in ProtectedHardwareVendors)
+            {
+                if (publisher.Contains(vendor, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!combined.Contains("update") && !combined.Contains("telemetry"))
+                        return false;
+                }
+            }
+        }
 
         // Extra hard-coded critical service names
         var critical = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -148,6 +196,23 @@ public class SafetyManager
         };
 
         return !forbidden.Contains(name);
+    }
+
+    /// <summary>
+    /// Returns true if a Scheduled Task can be disabled.
+    /// </summary>
+    public bool CanDisableScheduledTask(string taskPath)
+    {
+        if (string.IsNullOrWhiteSpace(taskPath)) return false;
+
+        // Never touch Microsoft core Windows tasks
+        if (taskPath.StartsWith("\\Microsoft\\Windows\\", StringComparison.OrdinalIgnoreCase) ||
+            taskPath.StartsWith("\\Microsoft\\Windows Defender\\", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     /// <summary>

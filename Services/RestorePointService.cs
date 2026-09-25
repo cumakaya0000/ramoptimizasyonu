@@ -134,14 +134,15 @@ public class RestorePointService
 
         LogService.Info($"Starting restore from snapshot: {snapshot.FileName}");
 
-        // Restore services
+        var taskManager = new ScheduledTaskManager(new Core.SafetyManager());
+
+        // Restore applied changes
         foreach (var change in snapshot.AppliedChanges)
         {
             try
             {
                 if (change.ChangeType == "ServiceStopped")
                 {
-                    // Try to start the service again
                     using var sc = new ServiceController(change.TargetName);
                     if (sc.Status != ServiceControllerStatus.Running)
                     {
@@ -152,7 +153,6 @@ public class RestorePointService
                 }
                 else if (change.ChangeType == "ServiceStartTypeChanged")
                 {
-                    // Restore original start type
                     var psi = new System.Diagnostics.ProcessStartInfo("sc.exe",
                         $"config \"{change.TargetName}\" start= {MapStartTypeToSc(change.OldValue)}")
                     {
@@ -165,8 +165,13 @@ public class RestorePointService
                 }
                 else if (change.ChangeType == "StartupDisabled")
                 {
-                    // Re-enable startup entry from disabled key
                     RestoreStartupEntry(change.TargetName, change.OldValue, errors);
+                }
+                else if (change.ChangeType == "ScheduledTaskDisabled")
+                {
+                    taskManager.EnableTask(change.TargetName, out var taskErr);
+                    if (!string.IsNullOrEmpty(taskErr))
+                        errors.Add($"Task restore failed for {change.TargetName}: {taskErr}");
                 }
             }
             catch (Exception ex)
@@ -186,7 +191,6 @@ public class RestorePointService
         try
         {
             var disabledPath = registryKeyPath + @"\AutorunsDisabled";
-            // Determine hive from path
             bool isHKCU = registryKeyPath.StartsWith("HKCU", StringComparison.OrdinalIgnoreCase)
                        || !registryKeyPath.StartsWith("HKLM", StringComparison.OrdinalIgnoreCase);
             var hive = isHKCU ? Microsoft.Win32.Registry.CurrentUser : Microsoft.Win32.Registry.LocalMachine;
