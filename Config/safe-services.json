@@ -1,0 +1,142 @@
+[
+  {
+    "ServiceName": "XblAuthManager",
+    "DisplayName": "Xbox Live Auth Manager",
+    "Category": "SAFE",
+    "Description": "Xbox Live kimlik doğrulama yöneticisi. Xbox kullanmıyorsanız kapatılabilir.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "XblGameSave",
+    "DisplayName": "Xbox Live Game Save",
+    "Category": "SAFE",
+    "Description": "Xbox Live oyun kayıt servisi.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "XboxGipSvc",
+    "DisplayName": "Xbox Accessory Management Service",
+    "Category": "SAFE",
+    "Description": "Xbox aksesuarlarını yönetir.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "XboxNetApiSvc",
+    "DisplayName": "Xbox Live Networking Service",
+    "Category": "SAFE",
+    "Description": "Xbox Live ağ servisi.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "Fax",
+    "DisplayName": "Fax",
+    "Category": "SAFE",
+    "Description": "Faks gönderme ve alma servisi. Modern sistemlerde nadiren kullanılır.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "MapsBroker",
+    "DisplayName": "Downloaded Maps Manager",
+    "Category": "SAFE",
+    "Description": "İndirilen haritaları yönetir.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "PhoneSvc",
+    "DisplayName": "Phone Service",
+    "Category": "SAFE",
+    "Description": "Telefon bağlantısı yönetimi.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "RetailDemo",
+    "DisplayName": "Retail Demo Service",
+    "Category": "SAFE",
+    "Description": "Mağaza demo modu. Normal kullanımda gereksizdir.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "wisvc",
+    "DisplayName": "Windows Insider Service",
+    "Category": "SAFE",
+    "Description": "Windows Insider programı servisi.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "RemoteRegistry",
+    "DisplayName": "Remote Registry",
+    "Category": "SAFE",
+    "Description": "Uzak registry erişimi. Güvenlik açısından kapatılması önerilir.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "WerSvc",
+    "DisplayName": "Windows Error Reporting Service",
+    "Category": "OPTIONAL",
+    "Description": "Windows hata raporlama servisi.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "DiagTrack",
+    "DisplayName": "Connected User Experiences and Telemetry",
+    "Category": "SAFE",
+    "Description": "Windows telemetri servisi. Gizlilik için kapatılabilir.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "DmEnrollmentSvc",
+    "DisplayName": "Device Management Enrollment Service",
+    "Category": "OPTIONAL",
+    "Description": "Cihaz yönetim kayıt servisi.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "Wcmsvc",
+    "DisplayName": "Windows Connection Manager",
+    "Category": "OPTIONAL",
+    "Description": "Bağlantı yöneticisi.",
+    "RiskLevel": "MEDIUM"
+  },
+  {
+    "ServiceName": "WbioSrvc",
+    "DisplayName": "Windows Biometric Service",
+    "Category": "OPTIONAL",
+    "Description": "Biyometrik kimlik doğrulama (parmak izi, yüz tanıma). Kullanmıyorsanız kapatılabilir.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "lfsvc",
+    "DisplayName": "Geolocation Service",
+    "Category": "SAFE",
+    "Description": "Konum servisi.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "SEMgrSvc",
+    "DisplayName": "Payments and NFC/SE Manager",
+    "Category": "SAFE",
+    "Description": "NFC ödeme yöneticisi.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "SCardSvr",
+    "DisplayName": "Smart Card",
+    "Category": "OPTIONAL",
+    "Description": "Akıllı kart desteği. Kullanmıyorsanız kapatılabilir.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "ScDeviceEnum",
+    "DisplayName": "Smart Card Device Enumeration Service",
+    "Category": "OPTIONAL",
+    "Description": "Akıllı kart cihaz sayım servisi.",
+    "RiskLevel": "LOW"
+  },
+  {
+    "ServiceName": "TapiSrv",
+    "DisplayName": "Telephony",
+    "Category": "OPTIONAL",
+    "Description": "Telefoni servisi.",
+    "RiskLevel": "LOW"
+  }
+]

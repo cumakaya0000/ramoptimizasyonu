@@ -1,0 +1,17 @@
+## Visual Studio / .NET
+bin/
+obj/
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+
+## Application generated runtime folders
+Logs/
+Backups/
+scratch/
+
+## OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
